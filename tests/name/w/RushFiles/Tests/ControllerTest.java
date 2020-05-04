@@ -1,18 +1,67 @@
 package name.w.RushFiles.Tests;
 
 import name.w.RushFiles.API;
+import name.w.RushFiles.APIException;
 import name.w.RushFiles.Controller;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.junit.jupiter.api.Test;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.util.ArrayList;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 
-public class ControllerTest extends Data
+public class ControllerTest
 {
+    protected static final String username = "hopster1222@gmail.com";
+    protected static final String password = "L!-M/BBfol";
+
+    protected static String primaryDomain;
+    protected static String domainToken;
+    protected static API.Share[] shares;
+    protected static API.VirtualFile[] shareContent;
+
+    @BeforeClass
+    public static void beforeClass() throws APIException
+    {
+        primaryDomain = API.getPrimaryDomain( username );
+
+        final String deviceId = API.registerDevice(
+            primaryDomain,
+            username,
+            password,
+            "device",
+            "windows",
+            0
+        );
+        domainToken = API.generateDomainToken( API.getPrimaryDomain( username ), username, password, deviceId, 0, 0 );
+
+        shares = API.getShares( primaryDomain, domainToken, username );
+        shareContent = API.getShareContent( primaryDomain, domainToken, shares[ 0 ].Id );
+    }
+
+    private static boolean isPrimaryDomain( final String subject )
+    {
+        return subject.equals( primaryDomain );
+    }
+
+    private static boolean isDomainToken( final String subject )
+    {
+        return subject.matches( "^.*Token.*?KeyId.*?Timestamp.*?Thumbprint.*$" );
+    }
+
+    private static boolean isUsername( final String subject )
+    {
+        return subject.equals( username );
+    }
+
+    private static boolean isPublicLink( final String subject )
+    {
+        return subject.matches( "https://.*?/client/publiclink.aspx\\?id=.*" );
+    }
+
     @Test
     public void testAuthorization() throws JSONException
     {
