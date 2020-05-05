@@ -3,6 +3,6 @@ build
 rushfiles.jar
 .idea
 openjdk*
-java*
 out
+target
 *.iml

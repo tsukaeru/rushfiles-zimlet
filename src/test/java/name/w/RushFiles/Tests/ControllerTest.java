@@ -116,7 +116,7 @@ public class ControllerTest
         assertTrue( response.getString( "message" ).contains( "Do not found primary domain for" ) );
     }
 
-    // TODO реакция на отсутствие каждой из трех в каждой команде
+    // TODO реакция на отсутствие полей для авторизации каждой из трех в каждой команде
 
     @Test
     public void testGetAllShares() throws JSONException
@@ -303,28 +303,28 @@ public class ControllerTest
         final var controller = new Controller( "create_links_to_files", request, primaryDomain, domainToken, username );
         final JSONObject response = controller.getResponse();
 
-        assertEquals( "success", response.getString( "status" ) );
+        assertEquals( "success", response.get( "status" ) );
         for( int objectIdx = 0; objectIdx < response.getJSONArray( "objects" ).length(); objectIdx++ ) {
             final JSONObject objectOriginal = sets.get( objectIdx );
             final JSONObject objectResult = response.getJSONArray( "objects" ).getJSONObject( objectIdx );
 
-            assertEquals( objectOriginal.getString( "ShareId" ), objectResult.getString( "ShareId" ) );
-            assertEquals( objectOriginal.getString( "InternalName" ), objectResult.getString( "InternalName" ) );
+            assertEquals( objectOriginal.get( "ShareId" ), objectResult.get( "ShareId" ) );
+            assertEquals( objectOriginal.get( "InternalName" ), objectResult.get( "InternalName" ) );
             assertEquals(
-                ( objectOriginal.has( "DaysToExpire" ) ) ? objectOriginal.getString( "DaysToExpire" ) : "null",
-                objectResult.getString( "DaysToExpire" )
+                ( objectOriginal.has( "DaysToExpire" ) ) ? objectOriginal.get( "DaysToExpire" ) : "null",
+                objectResult.get( "DaysToExpire" )
             );
             assertEquals(
-                ( objectOriginal.has( "MaxUse" ) ) ? objectOriginal.getString( "MaxUse" ) : "null",
-                objectResult.getString( "MaxUse" )
+                ( objectOriginal.has( "MaxUse" ) ) ? objectOriginal.get( "MaxUse" ) : "null",
+                objectResult.get( "MaxUse" )
             );
             assertEquals(
-                ( objectOriginal.has( "Message" ) ) ? objectOriginal.getString( "Message" ) : "null",
-                objectResult.getString( "Message" )
+                ( objectOriginal.has( "Message" ) ) ? objectOriginal.get( "Message" ) : "null",
+                objectResult.get( "Message" )
             );
             assertEquals(
-                ( objectOriginal.has( "Password" ) ) ? objectOriginal.getString( "Password" ) : "null",
-                objectResult.getString( "Password" )
+                ( objectOriginal.has( "Password" ) ) ? objectOriginal.get( "Password" ) : "null",
+                objectResult.get( "Password" )
             );
             assertTrue( isPublicLink( objectResult.getString( "Link" ) ) );
         }

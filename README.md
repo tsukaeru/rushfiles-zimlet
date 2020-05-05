@@ -2,19 +2,24 @@
 
 ### Dev environment
 
-1. Include to project libraries from path in zimbra-server:
+1. Go to /opt/zimbra/lib/jars
+1. Put in the root project folder .lib the next jars:
+    * zimbra-charset.jar
+    * zimbra-native.jar
+    * zimbrastore.jar
+    * zimbrasoap.jar
+    * zimbracommon.jar
+    * zimbraclient.jar
+1. mvn clean
 
-       /opt/zimbra/lib/jars
-1. Include libraries from root *.iml.
+### Extension Installation
 
-### Extension deploying
-
-1. Build jar rushfiles.jar
-1. Move the jar to the folder /opt/zimbra/lib/ext/rushfiles/
+1. Build jar
+1. Move the jar to the path /opt/zimbra/lib/ext/rushfiles/rushfiles.jar
 1. Execute:
 
        su - zimbra -c 'zmmailboxdctl restart'
-1. Check deploying result:
+1. Check deploying result (optional):
 
        cat /opt/zimbra/log/mailbox.log | grep -i rushfiles
 

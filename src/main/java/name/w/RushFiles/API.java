@@ -217,7 +217,6 @@ public class API
         return request( url, RequestMethod.PUT, json, null );
     }
 
-    // TODO можно будет мокнуть и возвращать заготовленные ответы. Типа тест контроллера все равно покрывает реальный функционал, а тут тока запросы за зря дублируем
     private static String request( final String url, final RequestMethod method,
                                    final JSONObject json, final String domainToken ) throws APIException
     {
