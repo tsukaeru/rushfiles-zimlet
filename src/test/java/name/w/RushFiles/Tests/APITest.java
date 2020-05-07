@@ -24,7 +24,8 @@ public class APITest
     @Test
     public void testDeviceRegistration() throws Exception
     {
-        mockRequestReturn( "{\n" +
+        mockRequestReturn(
+            "{\n" +
             "  \"Data\": {\n" +
             "    \"Id\": \"hopster1222\",\n" +
             "    \"Name\": \"device\",\n" +
@@ -32,14 +33,16 @@ public class APITest
             "    \"DeviceType\": 0\n" +
             "  },\n" +
             "  \"Message\": \"Ok.\"\n" +
-            "}" );
+            "}"
+        );
         assertEquals( 64, API.registerDevice( "any", "any", "any", "any", "any", 0 ).length() );
     }
 
     @Test
     public void testDomainTokenGeneration() throws Exception
     {
-        mockRequestReturn( "{\n" +
+        mockRequestReturn(
+            "{\n" +
             "  \"Data\": {\n" +
             "    \"DomainTokens\": [\n" +
             "      {\n" +
@@ -54,23 +57,24 @@ public class APITest
             "    \"WipeDevice\": false\n" +
             "  },\n" +
             "  \"Message\": \"Ok.\"\n" +
-            "}" );
-
-        assertTrue(
-            API.generateDomainToken( "any", "any", "any", "any", 0, 0 )
-                .matches( "^.*Token.*?KeyId.*?Timestamp.*?Thumbprint.*$" )
+            "}"
         );
+
+        assertTrue( API.generateDomainToken( "any", "any", "any", "any", 0, 0 )
+                       .matches( "^.*Token.*?KeyId.*?Timestamp.*?Thumbprint.*$" ) );
     }
 
     @Test
     public void testPublicLinkCreation() throws Exception
     {
-        mockRequestReturn( "{\n" +
+        mockRequestReturn(
+            "{\n" +
             "  \"Data\": {\n" +
             "    \"FullLink\": \"https://cloudfile.jp/client/publiclink.aspx?id=VUVZk3KeZ7\"\n" +
             "  },\n" +
             "  \"Message\": \"Public link has been created.\"\n" +
-            "}" );
+            "}"
+        );
 
         final String linkWithPassword = API.createPublicLink( "any", "any", "any", "any", 0, 0, "any", "any" );
         assertTrue( linkWithPassword.matches( "https://.*?/client/publiclink.aspx\\?id=.*" ) );
@@ -82,7 +86,8 @@ public class APITest
     @Test
     public void testFolderContentGetting() throws Exception
     {
-        mockRequestReturn( "{\n" +
+        mockRequestReturn(
+            "{\n" +
             "  \"Data\": [\n" +
             "    {\n" +
             "      \"IsFile\": true,\n" +
@@ -116,9 +121,44 @@ public class APITest
     }
 
     @Test
+    public void testSharesGetting() throws Exception
+    {
+        mockRequestReturn(
+            "{\n" +
+            "  \"Data\": [\n" +
+            "    {\n" +
+            "      \"Id\": \"17b8cd708c5f41f0a7d30a7230612de2\",\n" +
+            "      \"CompanyId\": \"39929886c09745e3bc98b9e85be7d0fb\",\n" +
+            "      \"Name\": \"Comp Inc\",\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"Id\": \"d94f8ed4c56e4f318edb41e5da8b064a\",\n" +
+            "      \"CompanyId\": \"ca10b965-3b9f-4e5a-96a6-f10b3acea1b8\",\n" +
+            "      \"Name\": \"Home folder\",\n" +
+            "    }\n" +
+            "  ],\n" +
+            "  \"Message\": \"Ok.\"\n" +
+            "}"
+        );
+
+        final API.Share[] files = API.getShares( "any", "any", "any" );
+
+        assertEquals( 2, files.length );
+
+        assertEquals( "17b8cd708c5f41f0a7d30a7230612de2", files[ 0 ].Id );
+        assertEquals( "Comp Inc", files[ 0 ].Name );
+        assertEquals( "39929886c09745e3bc98b9e85be7d0fb", files[ 0 ].CompanyId );
+
+        assertEquals( "d94f8ed4c56e4f318edb41e5da8b064a", files[ 1 ].Id );
+        assertEquals( "Home folder", files[ 1 ].Name );
+        assertEquals( "ca10b965-3b9f-4e5a-96a6-f10b3acea1b8", files[ 1 ].CompanyId );
+    }
+
+    @Test
     public void testShareContentGetting() throws Exception
     {
-        mockRequestReturn( "{\n" +
+        mockRequestReturn(
+            "{\n" +
             "  \"Data\": [\n" +
             "    {\n" +
             "      \"IsFile\": false,\n" +
@@ -134,7 +174,8 @@ public class APITest
             "    }\n" +
             "  ],\n" +
             "  \"Message\": \"Ok.\"\n" +
-            "}" );
+            "}"
+        );
 
         final API.VirtualFile[] files = API.getShareContent( "any", "any", "any" );
 
@@ -149,38 +190,6 @@ public class APITest
         assertEquals( "b54e638b67664c688dd0cf28537bf191", files[ 1 ].InternalName );
         assertEquals( "17b8cd708c5f41f0a7d30a7230612de2", files[ 1 ].ShareId );
         assertEquals( "testfile.txt", files[ 1 ].PublicName );
-    }
-
-    @Test
-    public void testSharesGetting() throws Exception
-    {
-        mockRequestReturn( "{\n" +
-            "  \"Data\": [\n" +
-            "    {\n" +
-            "      \"Id\": \"17b8cd708c5f41f0a7d30a7230612de2\",\n" +
-            "      \"CompanyId\": \"39929886c09745e3bc98b9e85be7d0fb\",\n" +
-            "      \"Name\": \"Comp Inc\",\n" +
-            "    },\n" +
-            "    {\n" +
-            "      \"Id\": \"d94f8ed4c56e4f318edb41e5da8b064a\",\n" +
-            "      \"CompanyId\": \"ca10b965-3b9f-4e5a-96a6-f10b3acea1b8\",\n" +
-            "      \"Name\": \"Home folder\",\n" +
-            "    }\n" +
-            "  ],\n" +
-            "  \"Message\": \"Ok.\"\n" +
-            "}" );
-
-        final API.Share[] files = API.getShares( "any", "any", "any" );
-
-        assertEquals( 2, files.length );
-
-        assertEquals( "17b8cd708c5f41f0a7d30a7230612de2", files[ 0 ].Id );
-        assertEquals( "Comp Inc", files[ 0 ].Name );
-        assertEquals( "39929886c09745e3bc98b9e85be7d0fb", files[ 0 ].CompanyId );
-
-        assertEquals( "d94f8ed4c56e4f318edb41e5da8b064a", files[ 1 ].Id );
-        assertEquals( "Home folder", files[ 1 ].Name );
-        assertEquals( "ca10b965-3b9f-4e5a-96a6-f10b3acea1b8", files[ 1 ].CompanyId );
     }
 
     private void mockRequestReturn( final String response ) throws Exception

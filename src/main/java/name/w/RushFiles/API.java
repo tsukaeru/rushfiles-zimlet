@@ -7,6 +7,7 @@ import org.json.JSONObject;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -28,7 +29,8 @@ public class API
     }
 
     public static String registerDevice( final String primaryDomain, final String username, final String password,
-                                         final String deviceName, final String deviceOs, final int deviceType ) throws APIException
+                                         final String deviceName, final String deviceOs, final int deviceType )
+        throws APIException
     {
         try {
             final String deviceId = buildUniqueIdByUsername( username );
@@ -44,7 +46,9 @@ public class API
                 "https://clientgateway." + primaryDomain + "/api/devices/" + deviceId,
                 json
             ) );
-            final String message = jsonObject.get( "Message" ).toString();
+            final String message = jsonObject
+                .get( "Message" )
+                .toString();
             if( message.equals( "Ok." ) ) {
                 return deviceId;
             }
@@ -56,7 +60,8 @@ public class API
     }
 
     public static String generateDomainToken( final String primaryDomain, final String username, final String password,
-                                              final String deviceId, final int longitude, final int latitude ) throws APIException
+                                              final String deviceId, final int longitude, final int latitude )
+        throws APIException
     {
         try {
             final var json = new JSONObject();
@@ -71,11 +76,16 @@ public class API
                 json,
                 null
             ) );
-            final String message = jsonObject.get( "Message" ).toString();
+            final String message = jsonObject
+                .get( "Message" )
+                .toString();
             if( message.equals( "Ok." ) ) {
-                return jsonObject.getJSONObject( "Data" )
+                return jsonObject
+                    .getJSONObject( "Data" )
                     .getJSONArray( "DomainTokens" )
-                    .getJSONObject( 0 ).get( "DomainToken" ).toString();
+                    .getJSONObject( 0 )
+                    .get( "DomainToken" )
+                    .toString();
             }
             throw new APIException( "Unable to obtain domain token: " + message );
         }
@@ -86,14 +96,18 @@ public class API
 
     public static String createPublicLink( final String primaryDomain, final String domainToken, final String shareId,
                                            final String internalName, final int daysToExpire, final int maxUse,
-                                           final String message ) throws APIException
+                                           final String message )
+        throws APIException
     {
-        return createPublicLink( primaryDomain, domainToken, shareId, internalName, daysToExpire, maxUse, message, null );
+        return createPublicLink( primaryDomain, domainToken, shareId, internalName,
+            daysToExpire, maxUse, message, null
+        );
     }
 
     public static String createPublicLink( final String primaryDomain, final String domainToken, final String shareId,
                                            final String internalName, final Integer daysToExpire, final Integer maxUse,
-                                           final String message, final String password ) throws APIException
+                                           final String message, final String password )
+        throws APIException
     {
         try {
             final var json = new JSONObject();
@@ -118,8 +132,14 @@ public class API
                 json,
                 domainToken
             ) );
-            if( result.get( "Message" ).toString().equals( "Public link has been created." ) ) {
-                return result.getJSONObject( "Data" ).get( "FullLink" ).toString();
+            if( result
+                .get( "Message" )
+                .toString()
+                .equals( "Public link has been created." ) ) {
+                return result
+                    .getJSONObject( "Data" )
+                    .get( "FullLink" )
+                    .toString();
             }
             throw new APIException( "Unable to create public link" );
         }
@@ -129,19 +149,20 @@ public class API
     }
 
     public static VirtualFile[] getFolderContent( final String primaryDomain, final String shareId,
-                                                  final String internalName, final String domainToken ) throws APIException
+                                                  final String internalName, final String domainToken )
+        throws APIException
     {
         try {
             final JSONObject response = new JSONObject( requestGET(
-                "https://clientgateway."
-                    + primaryDomain + "/api/shares/"
-                    + shareId + "/virtualfiles/"
-                    + internalName + "/children",
+                "https://clientgateway." + primaryDomain + "/api/shares/" + shareId + "/virtualfiles/" + internalName +
+                "/children",
                 domainToken
             ) );
             final String message = response.getString( "Message" );
             if( message.equals( "Ok." ) ) {
-                return new Gson().fromJson( response.getJSONArray( "Data" ).toString(), VirtualFile[].class );
+                return new Gson().fromJson( response
+                    .getJSONArray( "Data" )
+                    .toString(), VirtualFile[].class );
             }
             throw new APIException( message );
         }
@@ -150,16 +171,21 @@ public class API
         }
     }
 
-    public static VirtualFile[] getShareContent( final String primaryDomain, final String domainToken, final String shareId ) throws APIException
+    public static VirtualFile[] getShareContent( final String primaryDomain, final String domainToken,
+                                                 final String shareId )
+        throws APIException
     {
         try {
             final JSONObject response = new JSONObject( requestGET(
-                "https://clientgateway." + primaryDomain + "/api/shares/" + shareId + "/children?includeAssociations=false&includeDeleted=false",
+                "https://clientgateway." + primaryDomain + "/api/shares/" + shareId +
+                "/children?includeAssociations=false&includeDeleted=false",
                 domainToken
             ) );
             final String message = response.getString( "Message" );
             if( message.equals( "Ok." ) ) {
-                return new Gson().fromJson( response.getJSONArray( "Data" ).toString(), VirtualFile[].class );
+                return new Gson().fromJson( response
+                    .getJSONArray( "Data" )
+                    .toString(), VirtualFile[].class );
             }
             throw new APIException( message );
         }
@@ -168,15 +194,22 @@ public class API
         }
     }
 
-    public static Share[] getShares( final String primaryDomain, final String domainToken, final String username ) throws APIException
+    public static Share[] getShares( final String primaryDomain, final String domainToken, final String username )
+        throws APIException
     {
         try {
-            final JSONObject jsonObject = new JSONObject( requestGET(
-                "https://clientgateway." + primaryDomain + "/api/users/shares?userId=" + username + "&includeAssociations=false",
+            final JSONObject response = new JSONObject( requestGET(
+                "https://clientgateway." + primaryDomain + "/api/users/shares?userId=" + username +
+                "&includeAssociations=false",
                 domainToken
             ) );
-            // TODO проверять успех ответа
-            return new Gson().fromJson( jsonObject.getJSONArray( "Data" ).toString(), Share[].class );
+            final String message = response.getString( "Message" );
+            if( message.equals( "Ok." ) ) {
+                return new Gson().fromJson( response
+                    .getJSONArray( "Data" )
+                    .toString(), Share[].class );
+            }
+            throw new APIException( message );
         }
         catch( JSONException e ) {
             throw new RuntimeException( e );
@@ -192,7 +225,9 @@ public class API
             final StringBuilder hexString = new StringBuilder();
             for( byte b : hash ) {
                 String hex = Integer.toHexString( 0xff & b );
-                if( hex.length() == 1 ) hexString.append( '0' );
+                if( hex.length() == 1 ) {
+                    hexString.append( '0' );
+                }
                 hexString.append( hex );
             }
             return hexString.toString();
@@ -207,7 +242,8 @@ public class API
         return request( url, RequestMethod.GET, null, domainToken );
     }
 
-    private static String requestPOST( final String url, final JSONObject json, final String domainToken ) throws APIException
+    private static String requestPOST( final String url, final JSONObject json, final String domainToken )
+        throws APIException
     {
         return request( url, RequestMethod.POST, json, domainToken );
     }
@@ -217,8 +253,9 @@ public class API
         return request( url, RequestMethod.PUT, json, null );
     }
 
-    private static String request( final String url, final RequestMethod method,
-                                   final JSONObject json, final String domainToken ) throws APIException
+    private static String request( final String url, final RequestMethod method, final JSONObject json,
+                                   final String domainToken )
+        throws APIException
     {
         try {
             final var con = ( HttpURLConnection ) new URL( url ).openConnection();
@@ -232,7 +269,9 @@ public class API
 
             if( json != null ) {
                 final OutputStream os = con.getOutputStream();
-                os.write( json.toString().getBytes( StandardCharsets.UTF_8 ) );
+                os.write( json
+                    .toString()
+                    .getBytes( StandardCharsets.UTF_8 ) );
                 os.close();
             }
 
@@ -243,7 +282,8 @@ public class API
             else if( con.getResponseCode() == HttpURLConnection.HTTP_BAD_REQUEST ) {
                 throw new APIException( "bad request" );
             }
-            else if( con.getResponseCode() == HttpURLConnection.HTTP_NOT_FOUND ) {
+            else if( con.getResponseCode() == HttpURLConnection.HTTP_NOT_FOUND ||
+                     con.getResponseCode() == HttpURLConnection.HTTP_FORBIDDEN ) {
                 in = new BufferedInputStream( con.getErrorStream() );
             }
             else {
@@ -259,6 +299,9 @@ public class API
 
             return String.valueOf( result );
         }
+        catch( UnknownHostException e ) {
+            throw new APIException( "unknown host: " + e.getMessage() );
+        }
         catch( IOException e ) {
             throw new RuntimeException( e );
         }
@@ -266,16 +309,14 @@ public class API
 
     private enum RequestMethod
     {
-        GET,
-        POST,
-        PUT
+        GET, POST, PUT
     }
 
     public static class Share
     {
-        public String Id;
-        public String CompanyId;
-        public String Name;
+        public final String Id;
+        public final String CompanyId;
+        public final String Name;
 
         private Share( final String aId, final String aCompanyId, final String aName )
         {
@@ -305,7 +346,8 @@ public class API
         public final String PublicName;
         public final String ShareId;
 
-        private VirtualFile( final boolean aIsFile, final String aInternalName, final String aPublicName, final String aShareId )
+        private VirtualFile( final boolean aIsFile, final String aInternalName, final String aPublicName,
+                             final String aShareId )
         {
             IsFile = aIsFile;
             InternalName = aInternalName;
