@@ -1,19 +1,19 @@
-package name.w.RushFiles.Extension;
+package name.w.Zimbra.RushFilesZimlet;
 
 import com.zimbra.common.service.ServiceException;
 import com.zimbra.cs.extension.ExtensionDispatcherServlet;
 import com.zimbra.cs.extension.ZimbraExtension;
 
-public class RushFilesExtension implements ZimbraExtension
+public class Extension implements ZimbraExtension
 {
     public String getName()
     {
-        return "MytestExtension";
+        return "RushFilesZimlet";
     }
 
     public void init() throws ServiceException
     {
-        ExtensionDispatcherServlet.register( this, new RushFiles() );
+        ExtensionDispatcherServlet.register( this, new ExtensionHttpServlet() );
     }
 
     public void destroy()
