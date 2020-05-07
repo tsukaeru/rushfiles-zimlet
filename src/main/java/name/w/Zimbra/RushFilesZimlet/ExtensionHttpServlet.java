@@ -1,8 +1,6 @@
-package name.w.RushFiles.Extension;
+package name.w.Zimbra.RushFilesZimlet;
 
 import com.zimbra.cs.extension.ExtensionHttpHandler;
-import name.w.RushFiles.API;
-import name.w.RushFiles.APIException;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -13,12 +11,17 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.stream.Collectors;
 
-public class RushFiles extends ExtensionHttpHandler
+public class ExtensionHttpServlet extends ExtensionHttpHandler
 {
     private JSONObject request;
     private String primaryDomain;
     private String domainToken;
     private String username;
+
+    public String getPath()
+    {
+        return "/rushfiles";
+    }
 
     public void doPost( final HttpServletRequest req, final HttpServletResponse resp ) throws IOException
     {
@@ -43,13 +46,13 @@ public class RushFiles extends ExtensionHttpHandler
                 response = authorize();
             }
             else if( primaryDomain == null || primaryDomain.isEmpty() ) {
-                throw new RushFilesException( "cookie <primary_domain> missing" );
+                throw new ExtensionHttpServletException( "cookie <primary_domain> missing" );
             }
             else if( domainToken == null || domainToken.isEmpty() ) {
-                throw new RushFilesException( "cookie <domain_token> missing" );
+                throw new ExtensionHttpServletException( "cookie <domain_token> missing" );
             }
             else if( username == null || username.isEmpty() ) {
-                throw new RushFilesException( "cookie <username> missing" );
+                throw new ExtensionHttpServletException( "cookie <username> missing" );
             }
             else if( route.equals( "get_all_shares" ) ) {
                 response = new JSONObject().put( "status", "success" ).put( "objects", getAllShares() );
@@ -64,14 +67,14 @@ public class RushFiles extends ExtensionHttpHandler
                 response = new JSONObject().put( "status", "success" ).put( "objects", createLinksToFiles() );
             }
             else {
-                throw new RushFilesException( "unknown route: " + route );
+                throw new ExtensionHttpServletException( "unknown route: " + route );
             }
 
         }
         catch( JSONException e ) {
             throw new RuntimeException( e );
         }
-        catch( RushFilesException | APIException e ) {
+        catch( ExtensionHttpServletException | RushFilesAPIException e ) {
             try {
                 response = new JSONObject().put( "status", "error" ).put( "message", e.getMessage() );
             }
@@ -80,11 +83,6 @@ public class RushFiles extends ExtensionHttpHandler
             }
         }
         resp.getOutputStream().print( response.toString() );
-    }
-
-    public String getPath()
-    {
-        return "/rushfiles";
     }
 
     private boolean isJSONValid( final String json )
@@ -116,15 +114,15 @@ public class RushFiles extends ExtensionHttpHandler
         return null;
     }
 
-    private JSONObject authorize() throws JSONException, APIException
+    private JSONObject authorize() throws JSONException, RushFilesAPIException
     {
         checkParamsPresence( request, "username", "password" );
 
         final String username = request.getString( "username" );
         final String password = request.getString( "password" );
-        final String primaryDomain = API.getPrimaryDomain( username );
-        final String deviceId = API.registerDevice( primaryDomain, username, password, "device", "os", 0 );
-        final String domainToken = API.generateDomainToken( primaryDomain, username, password, deviceId, 0, 0 );
+        final String primaryDomain = RushFilesAPI.getPrimaryDomain( username );
+        final String deviceId = RushFilesAPI.registerDevice( primaryDomain, username, password, "device", "os", 0 );
+        final String domainToken = RushFilesAPI.generateDomainToken( primaryDomain, username, password, deviceId, 0, 0 );
         return new JSONObject()
             .put( "status", "success" )
             .put( "primary_domain", primaryDomain )
@@ -133,49 +131,49 @@ public class RushFiles extends ExtensionHttpHandler
             ;
     }
 
-    private JSONArray getAllShares() throws APIException
+    private JSONArray getAllShares() throws RushFilesAPIException
     {
         final JSONArray shares = new JSONArray();
-        for( final API.Share share : API.getShares( primaryDomain, domainToken, username ) ) {
+        for( final RushFilesAPI.Share share : RushFilesAPI.getShares( primaryDomain, domainToken, username ) ) {
             shares.put( share.toJson() );
         }
         return shares;
     }
 
-    private JSONArray getShareContents() throws APIException, JSONException
+    private JSONArray getShareContents() throws RushFilesAPIException, JSONException
     {
         checkParamsPresence( request, "ShareId" );
 
         final var result = new JSONArray();
-        final API.VirtualFile[] files = API.getShareContent(
+        final RushFilesAPI.VirtualFile[] files = RushFilesAPI.getShareContent(
             primaryDomain,
             domainToken,
             request.getString( "ShareId" )
         );
-        for( final API.VirtualFile file : files ) {
+        for( final RushFilesAPI.VirtualFile file : files ) {
             result.put( file.toJson() );
         }
         return result;
     }
 
-    private JSONArray getFolderContents() throws JSONException, APIException
+    private JSONArray getFolderContents() throws JSONException, RushFilesAPIException
     {
         checkParamsPresence( request, "ShareId", "InternalName" );
 
         final var result = new JSONArray();
-        final API.VirtualFile[] files = API.getFolderContent(
+        final RushFilesAPI.VirtualFile[] files = RushFilesAPI.getFolderContent(
             primaryDomain,
             request.getString( "ShareId" ),
             request.getString( "InternalName" ),
             domainToken
         );
-        for( final API.VirtualFile file : files ) {
+        for( final RushFilesAPI.VirtualFile file : files ) {
             result.put( file.toJson() );
         }
         return result;
     }
 
-    private JSONArray createLinksToFiles() throws JSONException, APIException
+    private JSONArray createLinksToFiles() throws JSONException, RushFilesAPIException
     {
         checkParamsPresence( request, "objects" );
 
@@ -194,7 +192,7 @@ public class RushFiles extends ExtensionHttpHandler
             final String password = ( file.has( "Password" ) ) ? file.getString( "Password" ) : null;
 
             final JSONObject linkCreated = new JSONObject();
-            linkCreated.put( "Link", API.createPublicLink(
+            linkCreated.put( "Link", RushFilesAPI.createPublicLink(
                 primaryDomain,
                 domainToken,
                 shareId,
@@ -217,11 +215,11 @@ public class RushFiles extends ExtensionHttpHandler
         return result;
     }
 
-    private void checkParamsPresence( final JSONObject request, final String... params ) throws APIException
+    private void checkParamsPresence( final JSONObject request, final String... params ) throws RushFilesAPIException
     {
         for( final String paramRequired : params ) {
             if( request == null || ! request.has( paramRequired ) ) {
-                throw new APIException( "parameter <" + paramRequired + "> missing" );
+                throw new RushFilesAPIException( "parameter <" + paramRequired + "> missing" );
             }
         }
     }

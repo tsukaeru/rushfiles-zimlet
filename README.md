@@ -2,21 +2,23 @@
 
 ### Dev environment
 
+1. Clone https://github.com/tsukaeru/rushfiles-zimlet.git in project root
 1. Create folder in project root: .lib
-1. Go to folder /opt/zimbra/lib/jars in host with deployed Zimbra
-1. Put in the root project folder .lib the next jars:
+1. Go to folder /opt/zimbra/lib/jars in host with deployed Zimbra 9.0.0
+1. Put in .lib the next jars:
     * zimbra-charset.jar
     * zimbra-native.jar
     * zimbrastore.jar
     * zimbrasoap.jar
     * zimbracommon.jar
     * zimbraclient.jar
-1. mvn clean
+1. mvn verify
 
 ### Extension Installation
 
 1. Build jar
-1. Move the jar to the path /opt/zimbra/lib/ext/rushfiles/rushfiles.jar
+1. Go to Zimbra console
+1. Copy the jar to /opt/zimbra/lib/ext/rushfiles/rushfiles.jar
 1. Execute:
 
        su - zimbra -c 'zmmailboxdctl restart'
@@ -26,9 +28,9 @@
 
 ### Testing
 
-Tests live in ./tests folder. To make functional ExtensionTest tests work you need to fill in an actual username and password in class name.w.RushFiles.Tests.ExtensionTest.
+Tests live in ./tests folder. To make functional Servlet tests work you need to fill in an actual username and password in class ExtensionHttpServletTest.
 
-API testing implemented by mock, ExtensionTest testing - by real requests. We can treat API tests as unit-testing, ExtensionTest tests - as functional-testing. (I do not see the point in long-running testing via requests the same functional twice.)
+API testing implemented by mock, Servlet testing - by real requests. We can treat API tests as unit-testing, Servlet tests - as functional-testing. (I do not see the point in long-running testing via requests the same functional twice.)
 
 ## API
 
@@ -106,7 +108,7 @@ POST /service/extension/rushfiles/get_all_shares
 POST /service/extension/rushfiles/get_share_contents
 
 {
-  ShareId: d94f8ed4c56e4f318edb41e5da8b064a
+  "ShareId": "d94f8ed4c56e4f318edb41e5da8b064a"
 }
 ```
 
@@ -140,7 +142,7 @@ POST /service/extension/rushfiles/get_share_contents
 POST /service/extension/rushfiles/get_folder_contents
 
 {
-  "ShareId": "17b8cd708c5f41f0a7d30a7230612de2"
+  "ShareId": "17b8cd708c5f41f0a7d30a7230612de2",
   "InternalName": "a42a0704af704efd83e515f97cac7b70"
 }
 ```

@@ -1,8 +1,8 @@
-package name.w.RushFiles.Tests;
+package name.w.Zimbra.RushFilesZimlet.Tests;
 
-import name.w.RushFiles.API;
-import name.w.RushFiles.APIException;
-import name.w.RushFiles.Extension.RushFiles;
+import name.w.Zimbra.RushFilesZimlet.RushFilesAPI;
+import name.w.Zimbra.RushFilesZimlet.RushFilesAPIException;
+import name.w.Zimbra.RushFilesZimlet.ExtensionHttpServlet;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
@@ -20,22 +20,22 @@ import java.util.ArrayList;
 import static org.mockito.Mockito.*;
 
 @TestMethodOrder( MethodOrderer.Alphanumeric.class )
-public class ExtensionTest
+public class ExtensionHttpServletTest
 {
     protected static final String username = "hopster1222@gmail.com";
     protected static final String password = "L!-M/BBfol";
 
     protected static String primaryDomain;
     protected static String domainToken;
-    protected static API.Share[] shares;
-    protected static API.VirtualFile[] shareContent;
+    protected static RushFilesAPI.Share[] shares;
+    protected static RushFilesAPI.VirtualFile[] shareContent;
 
     @BeforeAll
-    public static void beforeAll() throws APIException
+    public static void beforeAll() throws RushFilesAPIException
     {
-        primaryDomain = API.getPrimaryDomain( username );
+        primaryDomain = RushFilesAPI.getPrimaryDomain( username );
 
-        final String deviceId = API.registerDevice(
+        final String deviceId = RushFilesAPI.registerDevice(
             primaryDomain,
             username,
             password,
@@ -43,10 +43,10 @@ public class ExtensionTest
             "windows",
             0
         );
-        domainToken = API.generateDomainToken( API.getPrimaryDomain( username ), username, password, deviceId, 0, 0 );
+        domainToken = RushFilesAPI.generateDomainToken( RushFilesAPI.getPrimaryDomain( username ), username, password, deviceId, 0, 0 );
 
-        shares = API.getShares( primaryDomain, domainToken, username );
-        shareContent = API.getShareContent( primaryDomain, domainToken, shares[ 0 ].Id );
+        shares = RushFilesAPI.getShares( primaryDomain, domainToken, username );
+        shareContent = RushFilesAPI.getShareContent( primaryDomain, domainToken, shares[ 0 ].Id );
     }
 
     @Test
@@ -290,7 +290,7 @@ public class ExtensionTest
             if( cookies != null ) when( request.getCookies() ).thenReturn( cookies );
             if( body != null ) when( request.getReader() ).thenReturn( new BufferedReader( new StringReader( body ) ) );
 
-            new RushFiles().doPost( request, response );
+            new ExtensionHttpServlet().doPost( request, response );
 
             verify( output ).print( matches( expectedMatch.replaceAll( "'", "\"" ) ) );
         }

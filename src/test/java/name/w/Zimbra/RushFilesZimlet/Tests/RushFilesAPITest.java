@@ -1,6 +1,6 @@
-package name.w.RushFiles.Tests;
+package name.w.Zimbra.RushFilesZimlet.Tests;
 
-import name.w.RushFiles.API;
+import name.w.Zimbra.RushFilesZimlet.RushFilesAPI;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -11,14 +11,14 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import static org.junit.Assert.*;
 
 @RunWith( PowerMockRunner.class )
-@PrepareForTest( API.class )
-public class APITest
+@PrepareForTest( RushFilesAPI.class )
+public class RushFilesAPITest
 {
     @Test
     public void testPrimaryDomainGetting() throws Exception
     {
         mockRequestReturn( "email@domain.com,primdomain.com" );
-        assertEquals( "primdomain.com", API.getPrimaryDomain( "email@domain.com" ) );
+        assertEquals( "primdomain.com", RushFilesAPI.getPrimaryDomain( "email@domain.com" ) );
     }
 
     @Test
@@ -35,7 +35,7 @@ public class APITest
             "  \"Message\": \"Ok.\"\n" +
             "}"
         );
-        assertEquals( 64, API.registerDevice( "any", "any", "any", "any", "any", 0 ).length() );
+        assertEquals( 64, RushFilesAPI.registerDevice( "any", "any", "any", "any", "any", 0 ).length() );
     }
 
     @Test
@@ -60,8 +60,8 @@ public class APITest
             "}"
         );
 
-        assertTrue( API.generateDomainToken( "any", "any", "any", "any", 0, 0 )
-                       .matches( "^.*Token.*?KeyId.*?Timestamp.*?Thumbprint.*$" ) );
+        assertTrue( RushFilesAPI.generateDomainToken( "any", "any", "any", "any", 0, 0 )
+                                .matches( "^.*Token.*?KeyId.*?Timestamp.*?Thumbprint.*$" ) );
     }
 
     @Test
@@ -76,10 +76,10 @@ public class APITest
             "}"
         );
 
-        final String linkWithPassword = API.createPublicLink( "any", "any", "any", "any", 0, 0, "any", "any" );
+        final String linkWithPassword = RushFilesAPI.createPublicLink( "any", "any", "any", "any", 0, 0, "any", "any" );
         assertTrue( linkWithPassword.matches( "https://.*?/client/publiclink.aspx\\?id=.*" ) );
 
-        final String linkWithoutPassword = API.createPublicLink( "any", "any", "any", "any", 0, 0, "any" );
+        final String linkWithoutPassword = RushFilesAPI.createPublicLink( "any", "any", "any", "any", 0, 0, "any" );
         assertTrue( linkWithoutPassword.matches( "https://.*?/client/publiclink.aspx\\?id=.*" ) );
     }
 
@@ -105,7 +105,7 @@ public class APITest
             "  \"Message\": \"Ok.\"\n" +
             "}" );
 
-        final API.VirtualFile[] files = API.getFolderContent( "any", "any", "any", "any" );
+        final RushFilesAPI.VirtualFile[] files = RushFilesAPI.getFolderContent( "any", "any", "any", "any" );
 
         assertEquals( 2, files.length );
 
@@ -141,7 +141,7 @@ public class APITest
             "}"
         );
 
-        final API.Share[] files = API.getShares( "any", "any", "any" );
+        final RushFilesAPI.Share[] files = RushFilesAPI.getShares( "any", "any", "any" );
 
         assertEquals( 2, files.length );
 
@@ -177,7 +177,7 @@ public class APITest
             "}"
         );
 
-        final API.VirtualFile[] files = API.getShareContent( "any", "any", "any" );
+        final RushFilesAPI.VirtualFile[] files = RushFilesAPI.getShareContent( "any", "any", "any" );
 
         assertEquals( 2, files.length );
 
@@ -194,10 +194,10 @@ public class APITest
 
     private void mockRequestReturn( final String response ) throws Exception
     {
-        PowerMockito.spy( API.class );
+        PowerMockito.spy( RushFilesAPI.class );
         PowerMockito
             .doReturn( response )
-            .when( API.class, "request", Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any() )
+            .when( RushFilesAPI.class, "request", Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any() )
         ;
     }
 }
