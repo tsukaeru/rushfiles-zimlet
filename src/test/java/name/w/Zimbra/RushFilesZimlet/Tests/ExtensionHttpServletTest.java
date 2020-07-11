@@ -1,8 +1,7 @@
 package name.w.Zimbra.RushFilesZimlet.Tests;
 
-import name.w.Zimbra.RushFilesZimlet.RushFilesAPI;
-import name.w.Zimbra.RushFilesZimlet.RushFilesAPIException;
 import name.w.Zimbra.RushFilesZimlet.ExtensionHttpServlet;
+import name.w.Zimbra.RushFilesZimlet.RushFiles.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
@@ -27,26 +26,18 @@ public class ExtensionHttpServletTest
 
     protected static String primaryDomain;
     protected static String domainToken;
-    protected static RushFilesAPI.Share[] shares;
-    protected static RushFilesAPI.VirtualFile[] shareContent;
+    protected static Share[] shares;
+    protected static VirtualFile[] shareContent;
 
     @BeforeAll
-    public static void beforeAll() throws RushFilesAPIException
+    public static void beforeAll() throws APIException
     {
-        primaryDomain = RushFilesAPI.getPrimaryDomain( username );
+        final API api = new Authenticator().unauthorized( username, password );
 
-        final String deviceId = RushFilesAPI.registerDevice(
-            primaryDomain,
-            username,
-            password,
-            "device",
-            "windows",
-            0
-        );
-        domainToken = RushFilesAPI.generateDomainToken( RushFilesAPI.getPrimaryDomain( username ), username, password, deviceId, 0, 0 );
-
-        shares = RushFilesAPI.getShares( primaryDomain, domainToken, username );
-        shareContent = RushFilesAPI.getShareContent( primaryDomain, domainToken, shares[ 0 ].Id );
+        primaryDomain = api.getPrimaryDomain();
+        domainToken = api.getDomainToken();
+        shares = api.getShares();
+        shareContent = api.getShareContent( shares[ 0 ].Id );
     }
 
     @Test
@@ -249,7 +240,7 @@ public class ExtensionHttpServletTest
     @CsvSource( {
         "get_share_contents, '{ ShareId: any }', 'No share could be found with the requested id.'",
         "get_folder_contents, '{ ShareId: any, InternalName: any }', 'No share could be found with the requested id.'",
-        "create_links_to_files, '{ objects: [ { ShareId: any, InternalName: any } ] }', 'Unable to create public link'",
+        "create_links_to_files, '{ objects: [ { ShareId: any, InternalName: any } ] }', 'No share could be found with the requested id.'",
     } )
     public void testRequestsWithInvalidParameter( final String route, final String body, final String messageExpected )
     {

@@ -1,6 +1,7 @@
 package name.w.Zimbra.RushFilesZimlet;
 
 import com.zimbra.cs.extension.ExtensionHttpHandler;
+import name.w.Zimbra.RushFilesZimlet.RushFiles.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -74,7 +75,7 @@ public class ExtensionHttpServlet extends ExtensionHttpHandler
         catch( JSONException e ) {
             throw new RuntimeException( e );
         }
-        catch( ExtensionHttpServletException | RushFilesAPIException e ) {
+        catch( ExtensionHttpServletException | APIException e ) {
             try {
                 response = new JSONObject().put( "status", "error" ).put( "message", e.getMessage() );
             }
@@ -114,15 +115,17 @@ public class ExtensionHttpServlet extends ExtensionHttpHandler
         return null;
     }
 
-    private JSONObject authorize() throws JSONException, RushFilesAPIException
+    private JSONObject authorize() throws ExtensionHttpServletException, JSONException, APIException
     {
         checkParamsPresence( request, "username", "password" );
 
         final String username = request.getString( "username" );
         final String password = request.getString( "password" );
-        final String primaryDomain = RushFilesAPI.getPrimaryDomain( username );
-        final String deviceId = RushFilesAPI.registerDevice( primaryDomain, username, password, "device", "os", 0 );
-        final String domainToken = RushFilesAPI.generateDomainToken( primaryDomain, username, password, deviceId, 0, 0 );
+
+        final API api = new Authenticator().unauthorized( username, password );
+
+        final String primaryDomain = api.getPrimaryDomain();
+        final String domainToken = api.getDomainToken();
         return new JSONObject()
             .put( "status", "success" )
             .put( "primary_domain", primaryDomain )
@@ -131,51 +134,49 @@ public class ExtensionHttpServlet extends ExtensionHttpHandler
             ;
     }
 
-    private JSONArray getAllShares() throws RushFilesAPIException
+    private JSONArray getAllShares() throws APIException
     {
+        final API api = new Authenticator().authorized( primaryDomain, domainToken, username );
         final JSONArray shares = new JSONArray();
-        for( final RushFilesAPI.Share share : RushFilesAPI.getShares( primaryDomain, domainToken, username ) ) {
+        for( final Share share : api.getShares() ) {
             shares.put( share.toJson() );
         }
         return shares;
     }
 
-    private JSONArray getShareContents() throws RushFilesAPIException, JSONException
+    private JSONArray getShareContents() throws ExtensionHttpServletException, APIException, JSONException
     {
         checkParamsPresence( request, "ShareId" );
+        final API api = new Authenticator().authorized( primaryDomain, domainToken, username );
 
         final var result = new JSONArray();
-        final RushFilesAPI.VirtualFile[] files = RushFilesAPI.getShareContent(
-            primaryDomain,
-            domainToken,
-            request.getString( "ShareId" )
-        );
-        for( final RushFilesAPI.VirtualFile file : files ) {
+        final VirtualFile[] files = api.getShareContent( request.getString( "ShareId" ) );
+        for( final VirtualFile file : files ) {
             result.put( file.toJson() );
         }
         return result;
     }
 
-    private JSONArray getFolderContents() throws JSONException, RushFilesAPIException
+    private JSONArray getFolderContents() throws JSONException, ExtensionHttpServletException, APIException
     {
         checkParamsPresence( request, "ShareId", "InternalName" );
+        final API api = new Authenticator().authorized( primaryDomain, domainToken, username );
 
         final var result = new JSONArray();
-        final RushFilesAPI.VirtualFile[] files = RushFilesAPI.getFolderContent(
-            primaryDomain,
+        final VirtualFile[] files = api.getFolderContent(
             request.getString( "ShareId" ),
-            request.getString( "InternalName" ),
-            domainToken
+            request.getString( "InternalName" )
         );
-        for( final RushFilesAPI.VirtualFile file : files ) {
+        for( final VirtualFile file : files ) {
             result.put( file.toJson() );
         }
         return result;
     }
 
-    private JSONArray createLinksToFiles() throws JSONException, RushFilesAPIException
+    private JSONArray createLinksToFiles() throws JSONException, ExtensionHttpServletException, APIException
     {
         checkParamsPresence( request, "objects" );
+        final API api = new Authenticator().authorized( primaryDomain, domainToken, username );
 
         final JSONArray result = new JSONArray();
         final JSONArray files = request.getJSONArray( "objects" );
@@ -192,9 +193,7 @@ public class ExtensionHttpServlet extends ExtensionHttpHandler
             final String password = ( file.has( "Password" ) ) ? file.getString( "Password" ) : null;
 
             final JSONObject linkCreated = new JSONObject();
-            linkCreated.put( "Link", RushFilesAPI.createPublicLink(
-                primaryDomain,
-                domainToken,
+            linkCreated.put( "Link", api.createPublicLink(
                 shareId,
                 internalName,
                 daysToExpire,
@@ -215,11 +214,12 @@ public class ExtensionHttpServlet extends ExtensionHttpHandler
         return result;
     }
 
-    private void checkParamsPresence( final JSONObject request, final String... params ) throws RushFilesAPIException
+    private void checkParamsPresence( final JSONObject request, final String... params )
+        throws ExtensionHttpServletException
     {
         for( final String paramRequired : params ) {
             if( request == null || ! request.has( paramRequired ) ) {
-                throw new RushFilesAPIException( "parameter <" + paramRequired + "> missing" );
+                throw new ExtensionHttpServletException( "parameter <" + paramRequired + "> missing" );
             }
         }
     }
