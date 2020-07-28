@@ -1,11 +1,10 @@
 package name.w.Zimbra.RushFilesZimlet.Tests;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import name.w.Zimbra.RushFilesZimlet.ExtensionHttpServlet;
 import name.w.Zimbra.RushFilesZimlet.RushFiles.*;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -23,6 +22,7 @@ public class ExtensionHttpServletTest
 {
     protected static final String username = "hopster1222@gmail.com";
     protected static final String password = "L!-M/BBfol";
+    protected boolean onTheFlyAuth = false;
 
     protected static String primaryDomain;
     protected static String domainToken;
@@ -40,14 +40,19 @@ public class ExtensionHttpServletTest
         shareContent = api.getShareContent( shares[ 0 ].Id );
     }
 
+    @BeforeEach
+    public void beforeEach()
+    {
+        onTheFlyAuth = false;
+    }
+
     @Test
     public void testAuthorization()
     {
         testRequest(
             "authorize",
             "{'username': '" + username + "', 'password': '" + password + "' }",
-            "\\{'domain_token':'.*Token.*Thumbprint.*','primary_domain':'cloudfile.jp','status':'success','username':'" +
-            username + "'\\}"
+            "\\{'domain_token':'.*Token.*Thumbprint.*','primary_domain':'cloudfile.jp','username':'" + username + "','status':'success'\\}"
         );
     }
 
@@ -59,6 +64,17 @@ public class ExtensionHttpServletTest
             "{ 'username': 'any@any.com', 'password': 'any' }",
             "\\{'message':'Do not found primary domain for username any@any.com','status':'error'\\}"
         );
+    }
+
+    @Test
+    public void testAuthorizationOnTheFly()
+    {
+        onTheFlyAuth = true;
+
+        testGetAllShares();
+        testGetShareContents();
+        testGetFolderContents();
+        testCreateLinksToFiles();
     }
 
     @Test
@@ -261,12 +277,12 @@ public class ExtensionHttpServletTest
         testRequest( route, "", cookies, expectedMatch );
     }
 
-    private void testRequest( final String route, final String body, final String expectedMatch )
+    private void testRequest( final String route, final String json, final String expectedMatch )
     {
-        testRequest( route, body, null, expectedMatch );
+        testRequest( route, json, null, expectedMatch );
     }
 
-    private void testRequest( final String route, final String body, final Cookie[] cookies,
+    private void testRequest( final String route, final String json, final Cookie[] cookies,
                               final String expectedMatch )
     {
         try {
@@ -278,8 +294,26 @@ public class ExtensionHttpServletTest
             when( request.getRequestURI() ).thenReturn( "/service/extension/rushfiles/" + route );
             when( response.getOutputStream() ).thenReturn( output );
             when( response.getWriter() ).thenReturn( writer );
-            if( cookies != null ) when( request.getCookies() ).thenReturn( cookies );
-            if( body != null ) when( request.getReader() ).thenReturn( new BufferedReader( new StringReader( body ) ) );
+            if( ! onTheFlyAuth && cookies != null ) {
+                when( request.getCookies() ).thenReturn( cookies );
+            }
+
+            String body;
+            if( json == null || json.isEmpty() ) {
+                body = "{}";
+            }
+            else {
+                body = json;
+            }
+
+            if( onTheFlyAuth ) {
+                final JsonObject jsonObject = JsonParser.parseString( body ).getAsJsonObject();
+                jsonObject.addProperty( "username", username );
+                jsonObject.addProperty( "password", password );
+                body = jsonObject.toString();
+            }
+
+            when( request.getReader() ).thenReturn( new BufferedReader( new StringReader( body ) ) );
 
             new ExtensionHttpServlet().doPost( request, response );
 

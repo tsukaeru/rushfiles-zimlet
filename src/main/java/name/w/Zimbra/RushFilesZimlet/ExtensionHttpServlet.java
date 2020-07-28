@@ -5,185 +5,163 @@ import name.w.Zimbra.RushFilesZimlet.RushFiles.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.stream.Collectors;
 
 public class ExtensionHttpServlet extends ExtensionHttpHandler
 {
-    private JSONObject request;
-    private String primaryDomain;
-    private String domainToken;
-    private String username;
+    private HttpServletResponse response;
+    private RequestData data;
+    private API api;
 
     public String getPath()
     {
         return "/rushfiles";
     }
 
-    public void doPost( final HttpServletRequest req, final HttpServletResponse resp ) throws IOException
+    public void doPost( final HttpServletRequest request, final HttpServletResponse response ) throws IOException
     {
-        resp.setHeader( "Content-Type", "text/json;charset=UTF-8" );
+        this.response = response;
+        this.response.setHeader( "Content-Type", "text/json;charset=UTF-8" );
 
-        JSONObject response;
         try {
-            final String route = req.getRequestURI().replaceFirst( "/service/extension" + getPath() + "/", "" );
-            final String body = req.getReader().lines().collect( Collectors.joining( System.lineSeparator() ) );
+            data = new RequestData( request );
 
-            final JSONObject request = ( isJSONValid( body ) ? new JSONObject( body ) : null );
-            final Cookie primaryDomainCookie = getCookieByName( "primary_domain", req.getCookies() );
-            final Cookie domainTokenCookie = getCookieByName( "domain_token", req.getCookies() );
-            final Cookie usernameCookie = getCookieByName( "username", req.getCookies() );
+            // standard auth
+            if( data.route.equals( "authorize" ) ) {
+                authorize();
+                return;
+            }
 
-            this.request = request;
-            this.primaryDomain = ( primaryDomainCookie == null ) ? null : primaryDomainCookie.getValue();
-            this.domainToken = ( domainTokenCookie == null ) ? null : domainTokenCookie.getValue();
-            this.username = ( usernameCookie == null ) ? null : usernameCookie.getValue();
-
-            if( route.equals( "authorize" ) ) {
-                response = authorize();
+            // on-the-fly auth
+            if( data.requestUsername != null && data.requestPassword != null ) {
+                api = new Authenticator().unauthorized( data.requestUsername, data.requestPassword );
             }
-            else if( primaryDomain == null || primaryDomain.isEmpty() ) {
-                throw new ExtensionHttpServletException( "cookie <primary_domain> missing" );
-            }
-            else if( domainToken == null || domainToken.isEmpty() ) {
-                throw new ExtensionHttpServletException( "cookie <domain_token> missing" );
-            }
-            else if( username == null || username.isEmpty() ) {
-                throw new ExtensionHttpServletException( "cookie <username> missing" );
-            }
-            else if( route.equals( "get_all_shares" ) ) {
-                response = new JSONObject().put( "status", "success" ).put( "objects", getAllShares() );
-            }
-            else if( route.equals( "get_share_contents" ) ) {
-                response = new JSONObject().put( "status", "success" ).put( "objects", getShareContents() );
-            }
-            else if( route.equals( "get_folder_contents" ) ) {
-                response = new JSONObject().put( "status", "success" ).put( "objects", getFolderContents() );
-            }
-            else if( route.equals( "create_links_to_files" ) ) {
-                response = new JSONObject().put( "status", "success" ).put( "objects", createLinksToFiles() );
-            }
+            // authed
             else {
-                throw new ExtensionHttpServletException( "unknown route: " + route );
+                if( data.cookiePrimaryDomain == null || data.cookiePrimaryDomain.isEmpty() ) {
+                    throw new ExtensionHttpServletException( "cookie <primary_domain> missing" );
+                }
+                else if( data.cookieDomainToken == null || data.cookieDomainToken.isEmpty() ) {
+                    throw new ExtensionHttpServletException( "cookie <domain_token> missing" );
+                }
+                else if( data.cookieUsername == null || data.cookieUsername.isEmpty() ) {
+                    throw new ExtensionHttpServletException( "cookie <username> missing" );
+                }
+
+                api = new Authenticator().authorized(
+                    data.cookiePrimaryDomain,
+                    data.cookieDomainToken,
+                    data.cookieUsername
+                );
             }
 
+            final String route = data.route;
+            switch( route ) {
+                case "get_all_shares":
+                    getAllShares(); break;
+                case "get_share_contents":
+                    getShareContents(); break;
+                case "get_folder_contents":
+                    getFolderContents(); break;
+                case "create_links_to_files":
+                    createLinksToFiles(); break;
+                default:
+                    throw new ExtensionHttpServletException( "unknown route: " + route );
+            }
         }
         catch( JSONException e ) {
             throw new RuntimeException( e );
         }
         catch( ExtensionHttpServletException | APIException e ) {
             try {
-                response = new JSONObject().put( "status", "error" ).put( "message", e.getMessage() );
+                setResponseError( e.getMessage() );
             }
             catch( JSONException j ) {
                 throw new RuntimeException( j );
             }
         }
-        resp.getOutputStream().print( response.toString() );
     }
 
-    private boolean isJSONValid( final String json )
+    private void authorize() throws ExtensionHttpServletException, APIException, IOException
     {
-        try {
-            new JSONObject( json );
+        if( data.requestUsername == null ) {
+            throw new ExtensionHttpServletException( "parameter <username> missing" );
         }
-        catch( JSONException ex ) {
-            try {
-                new JSONArray( json );
-            }
-            catch( JSONException ex1 ) {
-                return false;
-            }
+        if( data.requestPassword == null ) {
+            throw new ExtensionHttpServletException( "parameter <password> missing" );
         }
-        return true;
+        final API api = new Authenticator().unauthorized( data.requestUsername, data.requestPassword );
+        setResponseSuccess(
+            new JSONObject()
+                .put( "primary_domain", api.getPrimaryDomain() )
+                .put( "domain_token", api.getDomainToken() )
+                .put( "username", api.getUsername() )
+        );
     }
 
-    private Cookie getCookieByName( final String name, final Cookie[] cookies )
+    private void getAllShares() throws APIException, IOException
     {
-        if( cookies == null ) {
-            return null;
-        }
-        for( final Cookie cookie : cookies ) {
-            if( name.equals( cookie.getName() ) ) {
-                return cookie;
-            }
-        }
-        return null;
-    }
-
-    private JSONObject authorize() throws ExtensionHttpServletException, JSONException, APIException
-    {
-        checkParamsPresence( request, "username", "password" );
-
-        final String username = request.getString( "username" );
-        final String password = request.getString( "password" );
-
-        final API api = new Authenticator().unauthorized( username, password );
-
-        final String primaryDomain = api.getPrimaryDomain();
-        final String domainToken = api.getDomainToken();
-        return new JSONObject()
-            .put( "status", "success" )
-            .put( "primary_domain", primaryDomain )
-            .put( "domain_token", domainToken )
-            .put( "username", username )
-            ;
-    }
-
-    private JSONArray getAllShares() throws APIException
-    {
-        final API api = new Authenticator().authorized( primaryDomain, domainToken, username );
         final JSONArray shares = new JSONArray();
         for( final Share share : api.getShares() ) {
             shares.put( share.toJson() );
         }
-        return shares;
+        setResponseSuccess( shares );
     }
 
-    private JSONArray getShareContents() throws ExtensionHttpServletException, APIException, JSONException
+    private void getShareContents() throws ExtensionHttpServletException, APIException, JSONException, IOException
     {
-        checkParamsPresence( request, "ShareId" );
-        final API api = new Authenticator().authorized( primaryDomain, domainToken, username );
+        if( data.requestShareId == null ) {
+            throw new ExtensionHttpServletException( "parameter <ShareId> missing" );
+        }
 
         final var result = new JSONArray();
-        final VirtualFile[] files = api.getShareContent( request.getString( "ShareId" ) );
+        final VirtualFile[] files = api.getShareContent( data.requestShareId );
         for( final VirtualFile file : files ) {
             result.put( file.toJson() );
         }
-        return result;
+
+        setResponseSuccess( result );
     }
 
-    private JSONArray getFolderContents() throws JSONException, ExtensionHttpServletException, APIException
+    private void getFolderContents() throws JSONException, ExtensionHttpServletException, APIException, IOException
     {
-        checkParamsPresence( request, "ShareId", "InternalName" );
-        final API api = new Authenticator().authorized( primaryDomain, domainToken, username );
+        if( data.requestShareId == null ) {
+            throw new ExtensionHttpServletException( "parameter <ShareId> missing" );
+        }
+        if( data.requestInternalName == null ) {
+            throw new ExtensionHttpServletException( "parameter <InternalName> missing" );
+        }
 
         final var result = new JSONArray();
         final VirtualFile[] files = api.getFolderContent(
-            request.getString( "ShareId" ),
-            request.getString( "InternalName" )
+            data.requestShareId,
+            data.requestInternalName
         );
         for( final VirtualFile file : files ) {
             result.put( file.toJson() );
         }
-        return result;
+
+        setResponseSuccess( result );
     }
 
-    private JSONArray createLinksToFiles() throws JSONException, ExtensionHttpServletException, APIException
+    private void createLinksToFiles() throws JSONException, ExtensionHttpServletException, APIException, IOException
     {
-        checkParamsPresence( request, "objects" );
-        final API api = new Authenticator().authorized( primaryDomain, domainToken, username );
+        if( data.requestObjects == null ) {
+            throw new ExtensionHttpServletException( "parameter <InternalName> missing" );
+        }
 
         final JSONArray result = new JSONArray();
-        final JSONArray files = request.getJSONArray( "objects" );
+        final JSONArray files = data.requestObjects;
         for( int fileIdx = 0; fileIdx < files.length(); fileIdx++ ) {
             final JSONObject file = files.getJSONObject( fileIdx );
-
-            checkParamsPresence( file, "ShareId", "InternalName" );
+            if( ! file.has( "ShareId" ) ) {
+                throw new ExtensionHttpServletException( "parameter <ShareId> missing" );
+            }
+            if( ! file.has( "InternalName" ) ) {
+                throw new ExtensionHttpServletException( "parameter <InternalName> missing" );
+            }
 
             final String shareId = file.getString( "ShareId" );
             final String internalName = file.getString( "InternalName" );
@@ -211,16 +189,27 @@ public class ExtensionHttpServlet extends ExtensionHttpHandler
             ;
             result.put( linkCreated );
         }
-        return result;
+
+        setResponseSuccess( result );
     }
 
-    private void checkParamsPresence( final JSONObject request, final String... params )
-        throws ExtensionHttpServletException
+    private void setResponseSuccess( final JSONObject response ) throws IOException
     {
-        for( final String paramRequired : params ) {
-            if( request == null || ! request.has( paramRequired ) ) {
-                throw new ExtensionHttpServletException( "parameter <" + paramRequired + "> missing" );
-            }
-        }
+        setResponse( response.put( "status", "success" ) );
+    }
+
+    private void setResponseSuccess( final JSONArray response ) throws IOException
+    {
+        setResponseSuccess( new JSONObject().put( "objects", response ) );
+    }
+
+    private void setResponseError( final String message ) throws IOException
+    {
+        setResponse( new JSONObject().put( "status", "error" ).put( "message", message ) );
+    }
+
+    private void setResponse( final JSONObject response ) throws IOException
+    {
+        this.response.getOutputStream().print( response.toString() );
     }
 }

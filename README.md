@@ -1,6 +1,6 @@
 ## Development
 
-### Dev environment
+### Environment
 
 1. Clone https://github.com/tsukaeru/rushfiles-zimlet.git in project root
 1. Create folder in project root: .lib
@@ -34,13 +34,12 @@ API testing implemented by mock, Servlet testing - by real requests. We can trea
 
 ## API
 
-### Authorization
+### Standard authorization
 
 #### Request
 
 ```http request
 POST /service/extension/rushfiles/authorize
-Content-Type: application/json
 
 {
   "username": "hopster1222@gmail.com",
@@ -54,14 +53,14 @@ You need to save username, primary_domain and domain_token in cookies. They need
 
 ```json
 {
-  "status": "success",
   "username": "hopster1222@gmail.com",
   "primary_domain": "cloudfiles.jp",
-  "domain_token": "11111"
+  "domain_token": "11111",
+  "status": "success"
 }
 ```
 
-### Authorization check
+#### Session expiration
 
 On every request backend will check the authorization. If it becomes invalid, you receive the next response:
 
@@ -71,6 +70,22 @@ On every request backend will check the authorization. If it becomes invalid, yo
   "message": "unauthorized"
 }
 ```
+
+### On-the-fly authorization
+
+You can to perform authorization on-the-fly for each specific api call. This method, unlike the standard way, will work for the current call only, and every time will be forced to perform full authentication, but this might be convenient in testing: you do not need make additional authenticational request and manage authentication cookies.
+
+For on-the-fly authorization you need to append in POST two fields: username and password (the same way as in [standard authorization](#standard-authorization)). Example:
+```http request
+POST /service/extension/rushfiles/get_share_contents
+
+{
+  "username": "hopster1222@gmail.com",
+  "password": "L!-M/BBfol",
+  "ShareId": "d94f8ed4c56e4f318edb41e5da8b064a"
+}
+```
+
 
 ### All available shares
 

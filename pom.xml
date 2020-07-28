@@ -10,7 +10,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <revision>1.0.2</revision>
+        <revision>1.0.3</revision>
         <author>hopster1222@gmail.com</author>
     </properties>
 
