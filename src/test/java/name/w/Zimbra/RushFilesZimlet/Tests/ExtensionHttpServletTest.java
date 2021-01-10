@@ -20,8 +20,8 @@ import static org.mockito.Mockito.*;
 @TestMethodOrder( MethodOrderer.Alphanumeric.class )
 public class ExtensionHttpServletTest
 {
-    protected static final String username = "hopster1222@gmail.com";
-    protected static final String password = "L!-M/BBfol";
+    protected static final String username = "user@mail.com";
+    protected static final String password = "123456";
     protected boolean onTheFlyAuth = false;
 
     protected static String primaryDomain;

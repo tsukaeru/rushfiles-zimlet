@@ -42,8 +42,8 @@ API testing implemented by mock, Servlet testing - by real requests. We can trea
 POST /service/extension/rushfiles/authorize
 
 {
-  "username": "hopster1222@gmail.com",
-  "password": "L!-M/BBfol"
+  "username": "user@mail.com",
+  "password": "123456"
 }
 ```
 
@@ -53,7 +53,7 @@ You need to save username, primary_domain and domain_token in cookies. They need
 
 ```json
 {
-  "username": "hopster1222@gmail.com",
+  "username": "user@mail.com",
   "primary_domain": "cloudfiles.jp",
   "domain_token": "11111",
   "status": "success"
@@ -80,8 +80,8 @@ For on-the-fly authorization you need to append in POST two fields: username and
 POST /service/extension/rushfiles/get_share_contents
 
 {
-  "username": "hopster1222@gmail.com",
-  "password": "L!-M/BBfol",
+  "username": "user@mail.com",
+  "password": "123456",
   "ShareId": "d94f8ed4c56e4f318edb41e5da8b064a"
 }
 ```
@@ -109,7 +109,7 @@ POST /service/extension/rushfiles/get_all_shares
     {
       "Id": "d94f8ed4c56e4f318edb41e5da8b064a",
       "CompanyId": "ca10b965-3b9f-4e5a-96a6-f10b3acea1b8",
-      "Name": "hopster1222 - Home folder"
+      "Name": "user - Home folder"
     }
   ]
 }
